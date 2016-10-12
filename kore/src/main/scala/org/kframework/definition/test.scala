@@ -35,7 +35,45 @@ class test {
 
   Exp ::= syntax(Exp, "+", Exp) att(att1, att2)  // ok because Strings are StringBecomingSyntax which are BecomingSyntax
   Exp ::= syntax(Exp, Exp)      att()
-  //  Exp ::= syntax(Exp, 3, Exp) att()  // rejected by compiler, '3' is not a 'BecomingSyntax'
+  // Exp ::= syntax(Exp, 3, Exp) att()  // rejected by compiler, '3' is not a 'BecomingSyntax'
 
+
+}
+
+class testing {
+
+  trait BecomingProductionItem
+  implicit class BecomingNonTerminal(s: ADT.SortLookup) extends BecomingProductionItem { val sort   = s }
+  implicit class BecomingTerminal(s: String)            extends BecomingProductionItem { val string = s }
+
+  object Syntax {
+    def apply(bpis: BecomingProductionItem*): Seq[ProductionItem] = {
+      return bpis.map {
+        case bpi : BecomingNonTerminal => NonTerminal(bpi.sort);
+        case bpi : BecomingTerminal    => Terminal(bpi.string);
+      }
+    }
+  }
+
+  val Int = ADT.SortLookup("Int")
+  val Exp = ADT.SortLookup("Exp")
+  val INT = Module("INT", Set(), Set(
+    SyntaxSort(Int)
+  ))
+
+  // module INT
+  //   syntax INT
+  // endmodule
+
+  val IMP = Module("IMP", Set(INT), Set(
+    Production(Exp, Syntax(Int, "+", Int), Att()),
+    Production(Exp, Syntax(Int, "*", Int), Att())
+  ))
+
+  // module IMP
+  //   imports INT
+  //   syntax Exp ::= Int "+" Int
+  //   syntax Exp ::= Int "+" Int
+  // endmodule
 
 }
