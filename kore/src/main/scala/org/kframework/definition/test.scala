@@ -69,20 +69,22 @@ class test {
   def Token(s: ADT.SortLookup, re: RegexTerminal): Production =
     Production(s, Syntax(re), Att("token"))
 
-  case class BecomingProduction(sort: ADT.SortLookup, pis: ProductionItem*) {
+  case class BecomingProduction(sort: ADT.SortLookup, pis: Seq[ProductionItem]) {
     def att(atts: String*): Production = Production(sort, pis, atts.foldLeft(Att())(_+_))
   }
 
   case class syntax(s: ADT.SortLookup) {
-    def ::= (pis: ProductionItem*): BecomingProduction = BecomingProduction(s, pis)
+    def ::=(pis: ProductionItem*): BecomingProduction = BecomingProduction(s, pis)
   }
+  // changing "::=" to "is" fixes precedence issue
 
   implicit def productionWithoutAttributes(bp: BecomingProduction) : Production =
     Production(bp.sort, bp.pis, Att())
 
   val ATTRIBUTES = Module("ATTRIBUTES", Set(), Set(
     Token(Key, regex("[a-z][a-zA-Z\\-0-9]*")),
-    (syntax(KeyList) ::= (Key)).att("assoc"),
+    syntax(KeyList) ::= Key,
+    (syntax(KeyList) ::= Key) att(assoc),
     Production(KeyList, Syntax(Key), Att()),
     Production(KeyList, Syntax(Key, ",", KeyList), Att()),
     Production(Attribute, Syntax(Key), Att()),
