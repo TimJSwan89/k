@@ -2,7 +2,6 @@ package org.kframework.definition
 
 import org.kframework.attributes.Att
 
-import scala.collection.mutable.ListBuffer
 import org.kframework.kore._
 
 
@@ -11,39 +10,6 @@ import org.kframework.kore._
   */
 
 class test {
-
-  implicit def BecomingNonTerminal(s: ADT.SortLookup): NonTerminal = NonTerminal(s)
-  implicit def BecomingTerminal(s: String): Terminal = Terminal(s)
-  def Syntax(ps: ProductionItem*) = ps
-
-  val Int = ADT.SortLookup("Int")
-  val Exp = ADT.SortLookup("Exp")
-  val INT = Module("INT", Set(), Set(
-    SyntaxSort(Int)
-    //Production(Int, Syntax(), Att())
-  ))
-
-  // module INT
-  //   syntax Int
-  // endmodule
-
-
-  import org.kframework.attributes.Att._
-
-  def Att(atts: String*) = atts.foldLeft(org.kframework.attributes.Att())(_+_)
-
-  val IMP = Module("IMP", Set(INT), Set(
-    Production(Exp, Syntax(Int, "+", Int), Att()),
-    Production(Exp, Syntax(Int, "*", Int), Att(assoc, "comm", bag))
-  ))
-
-  // Production(Exp, Seq[ProductionItem](NonTerminal(Int), Terminal("+"), NonTerminal(Int)), Att())
-
-  // module IMP
-  //   imports INT
-  //   syntax Exp ::= Int "+" Int
-  //   syntax Exp ::= Int "*" Int
-  // endmodule
 
   // module ATTRIBUTES
   //   token Key ::= r"[a-z][A-Za-z\\-0-9]*"
@@ -56,6 +22,11 @@ class test {
   //   syntax Attributes ::= "[" AttributeList "]"
   // endmodule
 
+  implicit def BecomingNonTerminal(s: ADT.SortLookup): NonTerminal = NonTerminal(s)
+  implicit def BecomingTerminal(s: String): Terminal = Terminal(s)
+  implicit def BecomingSequence(ps: ProductionItem*): Seq[ProductionItem] = ps
+
+  import org.kframework.attributes.Att._
   def Sort(s: String): ADT.SortLookup = ADT.SortLookup(s)
 
   val Key = Sort("Key")
@@ -64,34 +35,55 @@ class test {
   val AttributeList = Sort("AttributeList")
   val Attributes = Sort("Attributes")
 
-  def regex(s: String): RegexTerminal = RegexTerminal("", s, "")
+  def regex(s: String): ProductionItem = RegexTerminal("", s, "")
 
-  def Token(s: ADT.SortLookup, re: RegexTerminal): Production =
-    Production(s, Syntax(re), Att("token"))
+  case class token(s: ADT.SortLookup) {
+    def is(pis: ProductionItem): BecomingToken = BecomingToken(s, List(pis))
+  }
 
-  case class BecomingProduction(sort: ADT.SortLookup, pis: Seq[ProductionItem]) {
+  case class BecomingToken(sort: ADT.SortLookup, pis: Seq[ProductionItem]) {
+    def att(atts: String*): Production = Production(sort, pis, atts.foldLeft(Att() + "token")(_+_))
+  }
+
+  implicit def tokenWithoutAttributes(bp: BecomingToken) : Production =
+    Production(bp.sort, bp.pis, Att() + "token")
+
+  case class syntax(s: ADT.SortLookup) {
+    def is(pis: ProductionItem*): BecomingSyntax = BecomingSyntax(s, pis)
+  }
+
+  case class BecomingSyntax(sort: ADT.SortLookup, pis: Seq[ProductionItem]) {
     def att(atts: String*): Production = Production(sort, pis, atts.foldLeft(Att())(_+_))
   }
 
-  case class syntax(s: ADT.SortLookup) {
-    def ::=(pis: ProductionItem*): BecomingProduction = BecomingProduction(s, pis)
-  }
-  // changing "::=" to "is" fixes precedence issue
-
-  implicit def productionWithoutAttributes(bp: BecomingProduction) : Production =
+  implicit def syntaxWithoutAttributes(bp: BecomingSyntax) : Production =
     Production(bp.sort, bp.pis, Att())
 
+  case class Axiom(ax: String, attr: Att) extends Sentence {
+    val att = attr
+  }
+
+  def axiom(ax: String): BecomingAxiom = BecomingAxiom(ax)
+
+  case class BecomingAxiom(ax: String) {
+    def att(atts: String*): Axiom = Axiom(ax, atts.foldLeft(Att())(_+_))
+  }
+
+  implicit def axiomWithoutAttributes(bax: BecomingAxiom) : Axiom =
+    Axiom(bax.ax, Att())
+
   val ATTRIBUTES = Module("ATTRIBUTES", Set(), Set(
-    Token(Key, regex("[a-z][a-zA-Z\\-0-9]*")),
-    syntax(KeyList) ::= Key,
-    (syntax(KeyList) ::= Key) att(assoc),
-    Production(KeyList, Syntax(Key), Att()),
-    Production(KeyList, Syntax(Key, ",", KeyList), Att()),
-    Production(Attribute, Syntax(Key), Att()),
-    Production(Attribute, Syntax(Key, "(", KeyList, ")"), Att()),
-    Production(AttributeList, Syntax(Attribute), Att()),
-    Production(AttributeList, Syntax(Attribute, ",", AttributeList), Att()),
-    Production(Attributes, Syntax("[", AttributeList, "]"), Att())
+    token(Key) is regex("[a-z][a-zA-Z\\-0-9]*"),
+    syntax(KeyList) is Key,
+    syntax(KeyList) is Key,
+    syntax(KeyList) is (Key, ",", KeyList),
+    syntax(Attribute) is Key,
+    syntax(Attribute) is (Key, "(", KeyList, ")"),
+    syntax(AttributeList) is Attribute,
+    syntax(AttributeList) is (Attribute, ",", AttributeList),
+    syntax(Attributes) is ("[", AttributeList, "]"),
+    axiom("axiom!") att("comm")
+    //syntax(KeyList) is (Key, Key) att(assoc, comm, "bag")
   ))
 
 }
