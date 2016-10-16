@@ -15,7 +15,6 @@ class test {
   implicit def BecomingTerminal(s: String): Terminal = Terminal(s)
   implicit def BecomingSequence(ps: ProductionItem*): Seq[ProductionItem] = ps
 
-  import org.kframework.attributes.Att._
   def Sort(s: String): ADT.SortLookup = ADT.SortLookup(s)
 
   def regex(s: String): ProductionItem = RegexTerminal("", s, "")
@@ -56,9 +55,10 @@ class test {
     Axiom(bax.ax, Att())
 
   def imports(s: Module*): Set[Module] = s.toSet
+  def sentences(s: Sentence*): Set[Sentence] = s.toSet
 
   // module KTOKENS
-  //   .KImportsList
+  //   .KImportList
   //
   //   token KString       ::= r"\"[a-zA-Z0-9\\-]*\"" [.Attributes]
   //   token KSort         ::= r"[A-Z][A-Za-z0-9]*" [.Attributes]
@@ -73,7 +73,7 @@ class test {
   val KAttributeKey = Sort("KAttributeKey")
   val KModuleName = Sort("KModuleName")
 
-  val KTOKENS = Module("KTOKENS", imports(), Set(
+  val KTOKENS = Module("KTOKENS", imports(), sentences(
 
     token(KString) is regex("\"[a-zA-Z0-9\\-]*\""),
     token(KSort) is regex("[A-Z][A-Za-z0-9]*"),
@@ -83,7 +83,7 @@ class test {
   ))
 
   // module KML
-  //   imports KTOKENS
+  //   imports KTOKENS .KImportList
   //
   //   syntax KMLVar ::= "mlvar" "(" KString ")"
   //
@@ -102,7 +102,7 @@ class test {
   val KMLVar = Sort("MLVar")
   val KMLFormula = Sort("MLFormula")
 
-  val KML = Module("KML", imports(KTOKENS), Set(
+  val KML = Module("KML", imports(KTOKENS), sentences(
 
     syntax(KMLVar) is ("mlvar", "(", KString, ")"),
 
@@ -120,7 +120,7 @@ class test {
   ))
 
   // module KATTRIBUTES
-  //   imports KTOKENS
+  //   imports KTOKENS .KImportList
   //
   //   syntax KKeyList ::= KAttributeKey [.KAttributes]
   //   syntax KKeyList ::= KAttributeKey "," KKeyList [.KAttributes]
@@ -136,7 +136,7 @@ class test {
   val KAttribute = Sort("Attribute")
   val KAttributes = Sort("Attributes")
 
-  val KATTRIBUTES = Module("KATTRIBUTES", imports(KTOKENS), Set(
+  val KATTRIBUTES = Module("KATTRIBUTES", imports(KTOKENS), sentences(
 
     syntax(KKeyList) is KAttributeKey,
     syntax(KKeyList) is (KAttributeKey, ",", KKeyList),
@@ -149,7 +149,7 @@ class test {
   ))
 
   // module KSENTENCES
-  //   imports KATTRIBUTES
+  //   imports KATTRIBUTES .KImportList
   //
   //   syntax KImport = "imports" KModuleName [.KAttributes]
   //   syntax KImportList = ".KImportList" [.KAttributes]
@@ -184,7 +184,7 @@ class test {
   val KSentence = Sort("KSentence")
   val KSentenceList = Sort("KSentenceList")
 
-  val KSENTENCES = Module("KSENTENCES", imports(KATTRIBUTES, KML), Set(
+  val KSENTENCES = Module("KSENTENCES", imports(KATTRIBUTES, KML), sentences(
 
     syntax(KImport) is ("imports", KModuleName),
     syntax(KImportList) is ".KImportList",
@@ -208,7 +208,7 @@ class test {
   ))
 
   // module KDEFINITION
-  //   imports KSENTENCES
+  //   imports KSENTENCES .KImportList
   //
   //   // Attributes on modules perhaps?
   //
@@ -231,7 +231,7 @@ class test {
   val KRequireList = Sort("KRequireList")
   val KDefinition = Sort("KDefinition")
 
-  val KDEFINITION = Module("KDEFINITION", imports(KSENTENCES), Set(
+  val KDEFINITION = Module("KDEFINITION", imports(KSENTENCES), sentences(
 
     syntax(KModule) is ("module", KModuleName, KImportList, KSentenceList, "endmodule"),
     syntax(KModuleList) is KModule,
