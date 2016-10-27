@@ -10,12 +10,12 @@ class ParseTest {
   val expParser = new ParseInModule(test.EXP)
   val kParser = new ParseInModule(test.KDEFINITION)
 
-  @Test def simpExp(): Unit = {
-    println(kParser.parseString("0 + 0", test.Exp, Source("")))
+  @Test def simpExpTest(): Unit = {
+    println(expParser.parseString("0 + 0", test.Exp, Source("")))
     assertTrue(true)
   }
 
-  @Test def ktokens(): Unit = {
+  @Test def ktokensTest(): Unit = {
     println(kParser.parseString("\"aName0239ntehu\"", test.KString, Source("")))
     println(kParser.parseString("SortName", test.KSort, Source("")))
     println(kParser.parseString("klabel", test.KAttributeKey, Source("")))
@@ -23,7 +23,7 @@ class ParseTest {
     assertTrue(true)
   }
 
-  @Test def kml(): Unit = {
+  @Test def kmlTest(): Unit = {
     println(kParser.parseString("kmlvar(testVar)", test.KMLVar, Source("")))
     println(kParser.parseString("KMLtrue", test.KMLFormula, Source("")))
     println(kParser.parseString("KMLfalse", test.KMLFormula, Source("")))
