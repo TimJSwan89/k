@@ -41,16 +41,18 @@ class ParseTest {
   }
 
   @Test def kml(): Unit = {
-    println(kParser.parseString("kmlvar(\"testVar\")", KMLVar, Source("")))
-    println(kParser.parseString("KMLtrue", KMLFormula, Source("")))
-    println(kParser.parseString("KMLfalse", KMLFormula, Source("")))
-    println(kParser.parseString("kmlvar(\"testVar\") KMLand KMLtrue", KMLFormula, Source("")))
-    println(kParser.parseString("kmlvar(\"testVar\") KMLor KMLfalse", KMLFormula, Source("")))
-    println(kParser.parseString("KMLnot kmlvar(\"testVar\")", KMLFormula, Source("")))
-    println(kParser.parseString("KMLexists kmlvar(\"testVar\") . KMLtrue", KMLFormula, Source("")))
-    println(kParser.parseString("KMLforall kmlvar(\"testVar\") . KMLtrue", KMLFormula, Source("")))
-    println(kParser.parseString("kmlvar(\"testVar\") KML=> KMLtrue", KMLFormula, Source("")))
-    assertTrue(true)
+    val testVar = l("kmlvar(_)")(t("\"testVar\"", KString))
+    val kmlTrue = k("KMLtrue")
+    val kmlFalse = k("KMLfalse")
+    assertEquals(parseK("kmlvar(\"testVar\")", KMLVar), testVar)
+    assertEquals(parseK("KMLtrue", KMLFormula), k("KMLtrue"))
+    assertEquals(parseK("KMLfalse", KMLFormula), k("KMLfalse"))
+    assertEquals(parseK("kmlvar(\"testVar\") KMLand KMLtrue", KMLFormula), l("_KMLand_")(testVar, kmlTrue))
+    assertEquals(parseK("kmlvar(\"testVar\") KMLor KMLfalse", KMLFormula), l("_KMLor_")(testVar, kmlFalse))
+    assertEquals(parseK("KMLnot kmlvar(\"testVar\")", KMLFormula), l("KMLnot_")(testVar))
+    assertEquals(parseK("KMLexists kmlvar(\"testVar\") . KMLtrue", KMLFormula), l("KMLexists_._")(testVar, kmlTrue))
+    assertEquals(parseK("KMLforall kmlvar(\"testVar\") . KMLtrue", KMLFormula), l("KMLforall_._")(testVar, kmlTrue))
+    assertEquals(parseK("kmlvar(\"testVar\") KML=> KMLtrue", KMLFormula), l("_KML=>_")(testVar, kmlTrue))
   }
 
 }
