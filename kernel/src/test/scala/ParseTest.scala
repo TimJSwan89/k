@@ -5,46 +5,51 @@ import org.kframework.parser.concrete2kore.ParseInModule
 import org.junit.Test
 import org.junit.Assert._
 import org.kframework.kore.ADT.SortLookup
-import org.kframework.kore.K
+import org.kframework.kore._
 import org.kframework.kore.KORE._
+import org.kframework.builtin.KLabels.ML_FALSE
 import org.kframework.utils.errorsystem.ParseFailedException
 
 
 class ParseTest {
+  import test._
 
-  val expParser = new ParseInModule(test.EXP)
-  val kParser = new ParseInModule(test.KDEFINITION)
+  val expParser = new ParseInModule(EXP)
+  val kParser = new ParseInModule(KDEFINITION)
 
+  case class l(s: String) { def apply(args: K*): K = KApply(KLabel(s), args) }
+  def k(s: String): K = KApply(KLabel(s))
+  def t(st: String, sl: ADT.SortLookup): K = KToken(st, sl)
 
-  def parseTest(parser: ParseInModule, toParse: String, parseAs: SortLookup, res: K): Boolean =
+  def parseTest(parser: ParseInModule, toParse: String, parseAs: SortLookup): K =
     parser.parseString(toParse, parseAs, Source(""))._1 match {
-      case Right(x) => x == res
-      case Left(y) => false
+      case Right(x) => x
+      case Left(y) => k(ML_FALSE)
     }
 
+  def parseK(toParse: String, parseAs: SortLookup): K = parseTest(kParser, toParse, parseAs)
+
   @Test def simpExp(): Unit = {
-    val res = KApply(KLabel("_+_"), KApply(KLabel("0")), KApply(KLabel("0")))
-    assertTrue(parseTest(expParser, "0 + 0", test.Exp, res))
+    assertEquals(parseTest(expParser, "0 + 0", Exp), l("_+_")(k("0"), k("0")))
   }
 
   @Test def ktokens(): Unit = {
-    println(kParser.parseString("\"aName0239ntehu\"", test.KString, Source("")))
-    println(kParser.parseString("SortName", test.KSort, Source("")))
-    println(kParser.parseString("klabel", test.KAttributeKey, Source("")))
-    println(kParser.parseString("MYMODULE", test.KModuleName, Source("")))
-    assertTrue(true)
+    assertEquals(parseK("\"aName0239ntehu\"", KString), t("\"aName0239ntehu\"", KString))
+    assertEquals(parseK("SortName", KSort), t("SortName", KSort))
+    assertEquals(parseK("klabel", KAttributeKey), t("klabel", KAttributeKey))
+    assertEquals(parseK("MYMODULE", KModuleName), t("MYMODULE", KModuleName))
   }
 
   @Test def kml(): Unit = {
-    println(kParser.parseString("kmlvar(\"testVar\")", test.KMLVar, Source("")))
-    println(kParser.parseString("KMLtrue", test.KMLFormula, Source("")))
-    println(kParser.parseString("KMLfalse", test.KMLFormula, Source("")))
-    println(kParser.parseString("kmlvar(\"testVar\") KMLand KMLtrue", test.KMLFormula, Source("")))
-    println(kParser.parseString("kmlvar(\"testVar\") KMLor KMLfalse", test.KMLFormula, Source("")))
-    println(kParser.parseString("KMLnot kmlvar(\"testVar\")", test.KMLFormula, Source("")))
-    println(kParser.parseString("KMLexists kmlvar(\"testVar\") . KMLtrue", test.KMLFormula, Source("")))
-    println(kParser.parseString("KMLforall kmlvar(\"testVar\") . KMLtrue", test.KMLFormula, Source("")))
-    println(kParser.parseString("kmlvar(\"testVar\") KML=> KMLtrue", test.KMLFormula, Source("")))
+    println(kParser.parseString("kmlvar(\"testVar\")", KMLVar, Source("")))
+    println(kParser.parseString("KMLtrue", KMLFormula, Source("")))
+    println(kParser.parseString("KMLfalse", KMLFormula, Source("")))
+    println(kParser.parseString("kmlvar(\"testVar\") KMLand KMLtrue", KMLFormula, Source("")))
+    println(kParser.parseString("kmlvar(\"testVar\") KMLor KMLfalse", KMLFormula, Source("")))
+    println(kParser.parseString("KMLnot kmlvar(\"testVar\")", KMLFormula, Source("")))
+    println(kParser.parseString("KMLexists kmlvar(\"testVar\") . KMLtrue", KMLFormula, Source("")))
+    println(kParser.parseString("KMLforall kmlvar(\"testVar\") . KMLtrue", KMLFormula, Source("")))
+    println(kParser.parseString("kmlvar(\"testVar\") KML=> KMLtrue", KMLFormula, Source("")))
     assertTrue(true)
   }
 
